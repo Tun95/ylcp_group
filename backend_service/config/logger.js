@@ -39,6 +39,23 @@ const error = async (error, context = {}) => {
   }
 };
 
+const warn = async (message, context = {}) => {
+  try {
+    const warnLog = createLogEntry("warn", message, context);
+
+    pinoLogger.warn(warnLog);
+
+    if (config.env !== "development") {
+      await logtail.warn(warnLog.message, warnLog);
+    }
+
+    return warnLog;
+  } catch (loggingError) {
+    pinoLogger.error("Logging system failure:", loggingError);
+    return null;
+  }
+};
+
 const info = async (message, context = {}) => {
   try {
     const infoLog = createLogEntry("info", message, context);
@@ -58,6 +75,7 @@ const info = async (message, context = {}) => {
 
 module.exports = {
   error,
+  warn,
   info,
   pinoLogger,
   logtail,

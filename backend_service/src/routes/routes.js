@@ -1,12 +1,34 @@
 const { HEALTH_STATUS } = require("../constants/constants");
+const authController = require("../controllers/auth.controller");
+const {
+  signupValidation,
+  signinValidation,
+  verifyOtpValidation,
+  forgotPasswordValidation,
+  resetPasswordValidation,
+} = require("../utils/validators");
 
 setupRoutes = (server) => {
-  // EXAMPLE
-  // server
-  //   .route("/api/asset-codes")
-  //   .post(isAdmin, createAssetCodeValidation, assetsController.createAssetCode)
-  //   .get(assetsController.getAllAssetCodes);
+  // Auth Routes
+  server.route("/auth/signup").post(signupValidation, authController.signup);
 
+  server.route("/auth/signin").post(signinValidation, authController.signin);
+
+  server
+    .route("/auth/verify-otp")
+    .post(verifyOtpValidation, authController.verifyOtp);
+
+  server
+    .route("/auth/forgot-password")
+    .post(forgotPasswordValidation, authController.forgotPassword);
+
+  server
+    .route("/auth/reset-password")
+    .post(resetPasswordValidation, authController.resetPassword);
+
+  server.route("/auth/resend-otp").post(authController.resendOtp);
+
+  // Health check routes
   server.get("/health", async (req, res) => {
     res.status(200).json({ status: HEALTH_STATUS.UP });
   });

@@ -78,6 +78,7 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
 
+    last_login: Date,
     password_change_at: Date,
     password_reset_token: String,
     password_reset_expires: Date,
@@ -122,28 +123,23 @@ userSchema.pre("save", async function (next) {
 });
 
 //Verify Account
-userSchema.methods.createAccountVerificationOtp = async function () {
-  // Generate a random 6-digit verification code
+userSchema.methods.createAccountVerificationOtp = function () {
   const verification_code = Math.floor(
     100000 + Math.random() * 900000
   ).toString();
-
-  // Set the verification code and expiration time
   this.account_verification_otp = verification_code;
   this.account_verification_otp_expires = Date.now() + 10 * 60 * 1000; // 10 mins
-
   return verification_code;
 };
 
 //Password Reset
-userSchema.methods.createPasswordResetToken = async function () {
+userSchema.methods.createPasswordResetToken = function () {
   const resetToken = crypto.randomBytes(32).toString("hex");
   this.password_reset_token = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
-
-  this.password_reset_expires = Date.now() + 10 * 60 * 1000; //10mins
+  this.password_reset_expires = Date.now() + 10 * 60 * 1000; // 10 mins
   return resetToken;
 };
 

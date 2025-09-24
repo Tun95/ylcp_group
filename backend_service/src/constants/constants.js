@@ -20,19 +20,6 @@ const STATUS = {
   REJECTED: "rejected",
 };
 
-// Auth messages
-const AUTH = {
-  INVALID_CREDENTIALS: "Invalid matric number or password",
-  ID_EXPIRED: "Student ID has expired",
-  ACCOUNT_DEACTIVATED: "Account is deactivated",
-  REGISTRATION_SUCCESS: "User registered successfully",
-  LOGIN_SUCCESS: "Login successful",
-  QR_VERIFICATION_SUCCESS: "QR code verified successfully",
-  QR_INVALID: "Invalid QR code format",
-  TOKEN_REQUIRED: "Access denied. No token provided.",
-  TOKEN_INVALID: "Token is not valid.",
-};
-
 const ERROR_MESSAGES = {
   // General messages
   NOT_FOUND: "API endpoint not found",
@@ -49,6 +36,17 @@ const ERROR_MESSAGES = {
   NOT_FOUND: "Resource not found",
   INVALID_SIGNATURE: "Invalid Signature",
 
+  //Auth related messages
+  VALIDATION_ERROR: "Validation error",
+  DUPLICATE_EMAIL: "Email already exists",
+  ACCOUNT_NOT_VERIFIED: "Please verify your account first",
+  ACCOUNT_ALREADY_VERIFIED: "Account is already verified",
+  ACCOUNT_DEACTIVATED: "Your account has been deactivated",
+  INVALID_OTP: "Invalid OTP",
+  OTP_EXPIRED: "OTP has expired",
+  INVALID_RESET_TOKEN: "Invalid or expired reset token",
+  RESET_TOKEN_EXPIRED: "Reset token has expired",
+
   //User error messages
   INVALID_USER_ID: "Invalid or missing user ID",
   USER_NOT_FOUND: "User not found",
@@ -58,5 +56,4 @@ module.exports = {
   STATUS,
   HEALTH_STATUS,
   ERROR_MESSAGES,
-  AUTH,
 };

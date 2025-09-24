@@ -3,12 +3,12 @@ module.exports = {
   db: {
     mongodb: {
       uri:
-        process.env.MONGODB_URI || "mongodb://localhost:27017/unilorin_library",
+        process.env.MONGODB_URI || "mongodb://localhost:27017/your_database_name",
     },
   },
   env: process.env.NODE_ENV || "development",
   jwt: {
-    secret: process.env.JWT_SECRET || "unilorin_library_secret_key",
+    secret: process.env.JWT_SECRET || "",
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
   },
   logtail: {
