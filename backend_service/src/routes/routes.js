@@ -1,5 +1,6 @@
 const { HEALTH_STATUS } = require("../constants/constants");
 const authController = require("../controllers/auth.controller");
+const isAdmin = require("../middlewares/admin.middleware");
 const {
   signupValidation,
   signinValidation,
@@ -27,6 +28,8 @@ setupRoutes = (server) => {
     .post(resetPasswordValidation, authController.resetPassword);
 
   server.route("/auth/resend-otp").post(authController.resendOtp);
+
+  // user routes
 
   // Health check routes
   server.get("/health", async (req, res) => {
