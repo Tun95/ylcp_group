@@ -1,5 +1,4 @@
 // backend_service/template/template.js
-
 const config = require("../config");
 
 // Email templates
@@ -12,7 +11,7 @@ const getVerificationEmailTemplate = (firstName, otp) => {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #007bff; color: white; padding: 20px; text-align: center; }
+          .header { background: #007bff; color: white; padding: 10px 20px; text-align: center; }
           .content { background: #f9f9f9; padding: 20px; }
           .otp { background: #e9ecef; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; }
           .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
@@ -50,9 +49,18 @@ const getPasswordResetEmailTemplate = (firstName, resetUrl) => {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #dc3545; color: white; padding: 20px; text-align: center; }
+          .header { background: #dc3545; color: white; padding: 10px 20px !important; text-align: center; }
           .content { background: #f9f9f9; padding: 20px; }
-          .button { background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; }
+          .button { 
+            background: #007bff; 
+            color: white !important; 
+            padding: 12px 24px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            display: inline-block; 
+            border: none;
+          }
+          a.button { color: white !important; text-decoration: none !important; }
           .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
         </style>
       </head>
@@ -65,7 +73,7 @@ const getPasswordResetEmailTemplate = (firstName, resetUrl) => {
             <h2>Hello ${firstName},</h2>
             <p>You requested to reset your password. Click the button below to reset your password:</p>
             <p style="text-align: center;">
-              <a href="${resetUrl}" class="button">Reset Password</a>
+              <a href="${resetUrl}" class="button" style="color: white !important; text-decoration: none !important;">Reset Password</a>
             </p>
             <p>This link will expire in 10 minutes.</p>
             <p>If you didn't request this reset, please ignore this email.</p>
@@ -90,7 +98,7 @@ const getPasswordResetConfirmationTemplate = (firstName) => {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #28a745; color: white; padding: 20px; text-align: center; }
+          .header { background: #28a745; color: white; padding: 10px 20px; text-align: center; }
           .content { background: #f9f9f9; padding: 20px; }
           .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
         </style>
