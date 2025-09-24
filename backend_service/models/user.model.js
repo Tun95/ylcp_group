@@ -74,9 +74,10 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
 
-    is_active: {
-      type: Boolean,
-      default: true,
+    status: {
+      type: String,
+      enum: ["active", "blocked", "closed"],
+      default: "active",
     },
 
     last_login: Date,

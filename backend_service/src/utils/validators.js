@@ -1,5 +1,5 @@
 // backend_service/src/utils/validators.js
-const { body, validationResult } = require("express-validator");
+const { body, param, query, validationResult } = require("express-validator");
 const { STATUS, ERROR_MESSAGES } = require("../constants/constants");
 
 // Common validation error handler
@@ -136,10 +136,107 @@ const resetPasswordValidation = [
   handleValidationErrors,
 ];
 
+// Update Profile Validation
+const updateProfileValidation = [
+  body("first_name")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("First name must be between 2 and 50 characters"),
+
+  body("last_name")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("Last name must be between 2 and 50 characters"),
+
+  body("gender")
+    .optional()
+    .isIn(["male", "female", "other"])
+    .withMessage("Gender must be male, female, or other"),
+
+  body("language")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ min: 2, max: 10 })
+    .withMessage("Language must be between 2 and 10 characters"),
+
+  body("location")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage("Location must be less than 100 characters"),
+
+  body("about_me")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("About me must be less than 500 characters"),
+
+  body("topics_of_interest")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Topics of interest must be less than 500 characters"),
+
+  handleValidationErrors,
+];
+
+// Update User Validation (Admin)
+const updateUserValidation = [
+  param("userId").isMongoId().withMessage("Invalid user ID"),
+
+  body("first_name")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("First name must be between 2 and 50 characters"),
+
+  body("last_name")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("Last name must be between 2 and 50 characters"),
+
+  body("role")
+    .optional()
+    .isIn(["user", "admin"])
+    .withMessage("Role must be user or admin"),
+
+  body("status")
+    .optional()
+    .isIn(["active", "blocked", "closed"])
+    .withMessage("Status must be active, blocked, or closed"),
+
+  handleValidationErrors,
+];
+
+// Update User Status Validation (Admin)
+const updateUserStatusValidation = [
+  param("userId").isMongoId().withMessage("Invalid user ID"),
+
+  body("status")
+    .isIn(["active", "blocked", "closed"])
+    .withMessage("Status must be active, blocked, or closed"),
+
+  handleValidationErrors,
+];
+
 module.exports = {
   signupValidation,
   signinValidation,
   verifyOtpValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
+  updateProfileValidation,
+  updateUserValidation,
+  updateUserStatusValidation,
 };

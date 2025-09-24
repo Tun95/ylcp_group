@@ -84,7 +84,7 @@ class AuthService {
       }
 
       // Check if user is active
-      if (!user.is_active) {
+      if (user.status !== "active") {
         throw new Error(ERROR_MESSAGES.ACCOUNT_DEACTIVATED);
       }
 

@@ -50,6 +50,13 @@ const ERROR_MESSAGES = {
   //User error messages
   INVALID_USER_ID: "Invalid or missing user ID",
   USER_NOT_FOUND: "User not found",
+  ACCESS_DENIED: "Access denied",
+  INVALID_TOKEN: "Invalid token",
+  ADMIN_ACCESS_REQUIRED: "Admin access required",
+  INVALID_PASSWORD: "Invalid current password",
+  CANNOT_DELETE_SELF: "You cannot delete your own account",
+  CANNOT_MODIFY_SELF_ROLE: "You cannot modify your own role",
+  CANNOT_MODIFY_SELF_STATUS: "You cannot modify your own status",
 };
 
 module.exports = {
