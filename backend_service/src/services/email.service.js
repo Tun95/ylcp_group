@@ -46,7 +46,7 @@ class EmailService {
 
   async sendVerificationEmail(email, otp, firstName) {
     const mailOptions = {
-      from: `"Your App Name" <${config.providers.email.username}>`,
+      from: `${config.webName} <${config.providers.email.username}>`,
       to: email,
       subject: "Verify Your Account",
       html: getVerificationEmailTemplate(firstName, otp),
@@ -59,7 +59,7 @@ class EmailService {
     const resetUrl = `${config.frontendUrl}/reset-password?token=${resetToken}`;
 
     const mailOptions = {
-      from: `"Your App Name" <${config.providers.email.username}>`,
+      from: `${config.webName} <${config.providers.email.username}>`,
       to: email,
       subject: "Password Reset Request",
       html: getPasswordResetEmailTemplate(firstName, resetUrl),
@@ -70,7 +70,7 @@ class EmailService {
 
   async sendPasswordResetConfirmation(email, firstName) {
     const mailOptions = {
-      from: `"Your App Name" <${config.providers.email.username}>`,
+      from: `${config.webName} <${config.providers.email.username}>`,
       to: email,
       subject: "Password Reset Successful",
       html: getPasswordResetConfirmationTemplate(firstName),

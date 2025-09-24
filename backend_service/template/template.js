@@ -1,4 +1,7 @@
 // backend_service/template/template.js
+
+const config = require("../config");
+
 // Email templates
 const getVerificationEmailTemplate = (firstName, otp) => {
   return `
@@ -28,7 +31,9 @@ const getVerificationEmailTemplate = (firstName, otp) => {
             <p>If you didn't create an account, please ignore this email.</p>
           </div>
           <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} Your App Name. All rights reserved.</p>
+            <p>&copy; ${new Date().getFullYear()} ${
+    config.webName
+  }. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -66,7 +71,9 @@ const getPasswordResetEmailTemplate = (firstName, resetUrl) => {
             <p>If you didn't request this reset, please ignore this email.</p>
           </div>
           <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} Your App Name. All rights reserved.</p>
+            <p>&copy; ${new Date().getFullYear()} ${
+    config.webName
+  }. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -99,7 +106,9 @@ const getPasswordResetConfirmationTemplate = (firstName) => {
             <p>If you didn't perform this action, please contact our support team immediately.</p>
           </div>
           <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} Your App Name. All rights reserved.</p>
+            <p>&copy; ${new Date().getFullYear()} ${
+    config.webName
+  }. All rights reserved.</p>
           </div>
         </div>
       </body>
