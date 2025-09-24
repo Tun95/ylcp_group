@@ -17,6 +17,10 @@ const handleValidationErrors = (req, res, next) => {
 
 // Signup Validation
 const signupValidation = [
+  body("role")
+    .isIn(["user", "admin"])
+    .withMessage("Role must be either 'user' or 'admin'"),
+
   body("first_name")
     .isString()
     .trim()

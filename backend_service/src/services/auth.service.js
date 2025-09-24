@@ -18,6 +18,10 @@ class AuthService {
         throw { code: 11000 };
       }
 
+      // Check if this is the first user in the system
+      const userCount = await userModel.countDocuments();
+      const isFirstUser = userCount === 0;
+
       // Hash password
       const salt = await bcrypt.genSalt(12);
       const hashedPassword = await bcrypt.hash(userData.password, salt);
@@ -25,6 +29,7 @@ class AuthService {
       // Create user
       const user = new userModel({
         ...userData,
+        is_admin: isFirstUser,
         password: hashedPassword,
       });
 
@@ -89,6 +94,7 @@ class AuthService {
           userId: user._id,
           email: user.email,
           role: user.role,
+          is_admin: user.is_admin,
         },
         config.jwt.secret,
         { expiresIn: config.jwt.expiresIn }
