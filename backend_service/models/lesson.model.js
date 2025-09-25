@@ -1,69 +1,101 @@
 // backend_service/models/lesson.model.js
 const mongoose = require("mongoose");
 
-const slideContentSchema = new mongoose.Schema({
-  type: {
-    type: String,
-    enum: ["text", "image", "video_clip", "diagram", "quiz"],
-    required: true,
-  },
-  content: String, // Text content or image URL
-  position: {
-    x: Number, // Percentage positioning
-    y: Number,
-    width: Number,
-    height: Number,
-  },
-  animation: {
-    type: String,
-    enum: ["fade", "slide", "typewriter", "none"],
-    default: "fade",
-  },
-  duration: Number, // How long this element stays on screen
-});
-
 const slideSchema = new mongoose.Schema({
-  slide_number: Number,
-  background: String, // Background image/color URL
-  duration: Number, // Total slide duration in seconds
-  ai_narration: {
-    text: String, // Script for AI to narrate
-    audio_url: String, // Generated audio file URL
-    duration: Number,
+  slide_number: { type: Number, required: true },
+  template_id: { type: String, required: true },
+  duration: { type: Number, required: true, min: 1 },
+  content: {
+    type: Map,
+    of: mongoose.Schema.Types.Mixed,
+    default: {},
   },
-  content_elements: [slideContentSchema],
   interactions: [
     {
-      type: {
-        type: String,
-        enum: ["multiple_choice", "drag_drop", "click_hotspot", "text_input"],
-        required: true,
-      },
-      trigger_time: Number, // When during slide to show interaction
-      question: String,
-      options: [String],
-      correct_answer: String,
-      feedback: String,
+      type: { type: String, required: true },
+      config: mongoose.Schema.Types.Mixed,
+      trigger_time: { type: Number, min: 0 },
     },
   ],
+  ai_narration: {
+    script: String,
+    audio_url: String,
+  },
 });
 
 const lessonSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
-    description: String,
-    thumbnail_url: String,
-    total_duration: Number,
-    slides: [slideSchema],
-    ai_voice: {
-      voice_id: String,
-      speed: Number,
-      tone: String,
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200,
     },
-    generated_video_url: String, // Final rendered video (optional)
-    is_published: { type: Boolean, default: false },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+    },
+    category: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    thumbnail: {
+      type: String,
+      default: "",
+    },
+    estimated_duration: {
+      type: Number,
+      min: 0,
+    },
+    difficulty: {
+      type: String,
+      enum: ["beginner", "intermediate", "advanced"],
+      default: "beginner",
+    },
+    tags: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    slides: [slideSchema],
+    created_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["draft", "published", "archived"],
+      default: "draft",
+    },
+    published_at: Date,
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
+
+// Virtual for total duration calculation
+lessonSchema.virtual("total_duration").get(function () {
+  return this.slides.reduce((total, slide) => total + slide.duration, 0);
+});
+
+// Pre-save middleware to update estimated_duration
+lessonSchema.pre("save", function (next) {
+  if (this.isModified("slides")) {
+    this.estimated_duration = this.total_duration;
+  }
+  next();
+});
+
+// Index for better query performance
+lessonSchema.index({ created_by: 1, status: 1 });
+lessonSchema.index({ category: 1, status: 1 });
+lessonSchema.index({ status: 1, published_at: -1 });
 
 module.exports = mongoose.model("Lesson", lessonSchema);

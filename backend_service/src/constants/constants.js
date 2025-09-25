@@ -57,6 +57,11 @@ const ERROR_MESSAGES = {
   CANNOT_DELETE_SELF: "You cannot delete your own account",
   CANNOT_MODIFY_SELF_ROLE: "You cannot modify your own role",
   CANNOT_MODIFY_SELF_STATUS: "You cannot modify your own status",
+
+  //Lesson error messages
+  LESSON_NOT_FOUND: "Lesson not found",
+  SLIDE_NOT_FOUND: "Slide not found",
+  UNAUTHORIZED_LESSON_ACCESS: "Unauthorized access to lesson",
 };
 
 module.exports = {

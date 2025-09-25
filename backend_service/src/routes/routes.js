@@ -11,6 +11,7 @@ const {
   updateUserValidation,
   updateProfileValidation,
   updateUserStatusValidation,
+  lessonValidation,
 } = require("../utils/validators");
 
 setupRoutes = (server) => {

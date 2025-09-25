@@ -230,6 +230,75 @@ const updateUserStatusValidation = [
   handleValidationErrors,
 ];
 
+// Lesson validation
+const lessonValidation = [
+  body("title")
+    .trim()
+    .notEmpty()
+    .withMessage("Lesson title is required")
+    .isLength({ max: 200 })
+    .withMessage("Title must be less than 200 characters"),
+
+  body("description")
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage("Description must be less than 1000 characters"),
+
+  body("category").trim().notEmpty().withMessage("Category is required"),
+
+  body("difficulty")
+    .optional()
+    .isIn(["beginner", "intermediate", "advanced"])
+    .withMessage("Difficulty must be beginner, intermediate, or advanced"),
+
+  body("tags").optional().isArray().withMessage("Tags must be an array"),
+
+  body("slides").optional().isArray().withMessage("Slides must be an array"),
+
+  body("slides.*.template_id")
+    .if(body("slides").exists())
+    .notEmpty()
+    .withMessage("Slide template ID is required"),
+
+  body("slides.*.duration")
+    .if(body("slides").exists())
+    .isInt({ min: 1 })
+    .withMessage("Slide duration must be at least 1 second"),
+
+  handleValidationErrors,
+];
+
+// Slide validation
+const slideValidation = [
+  body("template_id").notEmpty().withMessage("Template ID is required"),
+
+  body("duration")
+    .isInt({ min: 1 })
+    .withMessage("Duration must be at least 1 second"),
+
+  body("content")
+    .optional()
+    .isObject()
+    .withMessage("Content must be an object"),
+
+  body("interactions")
+    .optional()
+    .isArray()
+    .withMessage("Interactions must be an array"),
+
+  handleValidationErrors,
+];
+
+// Status validation
+const lessonStatusValidation = [
+  body("status")
+    .isIn(["draft", "published", "archived"])
+    .withMessage("Status must be draft, published, or archived"),
+
+  handleValidationErrors,
+];
+
 module.exports = {
   signupValidation,
   signinValidation,
@@ -239,4 +308,7 @@ module.exports = {
   updateProfileValidation,
   updateUserValidation,
   updateUserStatusValidation,
+  lessonValidation,
+  slideValidation,
+  lessonStatusValidation,
 };
