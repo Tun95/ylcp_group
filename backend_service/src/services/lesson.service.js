@@ -2,13 +2,13 @@
 const logger = require("../../config/logger");
 const Lesson = require("../../models/lesson.model");
 const AINarrationService = require("./aiNarration.service");
+const FirebaseStorageService = require("./firebaseStorage.service");
 const { ERROR_MESSAGES } = require("../constants/constants");
 
 class LessonService {
   // Create lesson with AI narration generation
   async createLesson(lessonData) {
     try {
-      // Auto-generate slide numbers and set default durations
       const processedSlides = await this.processSlides(lessonData.slides);
 
       const lesson = new Lesson({
@@ -56,6 +56,10 @@ class LessonService {
               slide.template_id,
               slide.content
             );
+            logger.warn(
+              `Using default narration for slide ${slideNumber}:`,
+              error.message
+            );
           }
         }
 
@@ -93,38 +97,52 @@ class LessonService {
           slide.ai_narration.status === "pending"
         ) {
           try {
-            const audioData = await AINarrationService.generateSpeech(
+            const audioResult = await AINarrationService.generateSpeech(
               slide.ai_narration.script,
               lesson.settings.ai_voice
             );
 
-            // Here you would save the audio file to storage (S3, etc.)
-            // For now, we'll simulate saving the URL
-            const audioUrl = await this.saveAudioFile(
-              audioData.audioBuffer,
-              `slide-${lessonId}-${i}.mp3`
-            );
-
-            slide.ai_narration.audio_url = audioUrl;
+            slide.ai_narration.audio_url = audioResult.audioUrl;
             slide.ai_narration.status = "completed";
+            slide.ai_narration.generated_at = new Date();
+
+            if (audioResult.filePath) {
+              slide.ai_narration.file_path = audioResult.filePath;
+            }
 
             await lesson.save();
+
+            logger.info(
+              `Narration generated for slide ${i + 1} of lesson ${lessonId}`
+            );
           } catch (error) {
             slide.ai_narration.status = "failed";
-            logger.error(`Narration generation failed for slide ${i}:`, error);
+            slide.ai_narration.error = error.message;
+            logger.error(
+              `Narration generation failed for slide ${i + 1}:`,
+              error
+            );
           }
+
+          // Add delay to avoid rate limiting
+          await this.delay(1000);
         }
       }
 
       lesson.narration_status = "completed";
       await lesson.save();
+
+      logger.info(`Narration generation completed for lesson ${lessonId}`);
     } catch (error) {
       const lesson = await Lesson.findById(lessonId);
       if (lesson) {
         lesson.narration_status = "failed";
         await lesson.save();
       }
-      throw error;
+      logger.error(
+        `Narration generation failed for lesson ${lessonId}:`,
+        error
+      );
     }
   }
 
@@ -199,6 +217,34 @@ class LessonService {
     return lesson;
   }
 
+  // Delete lesson and associated audio files
+  async deleteLesson(lessonId) {
+    try {
+      const lesson = await Lesson.findById(lessonId);
+      if (!lesson) {
+        throw new Error(ERROR_MESSAGES.LESSON_NOT_FOUND);
+      }
+
+      // Delete associated audio files from Firebase
+      for (const slide of lesson.slides) {
+        if (slide.ai_narration?.file_path) {
+          await FirebaseStorageService.deleteFile(
+            slide.ai_narration.file_path
+          ).catch((error) =>
+            logger.error("Failed to delete audio file:", error)
+          );
+        }
+      }
+
+      await Lesson.findByIdAndDelete(lessonId);
+
+      return { message: "Lesson deleted successfully" };
+    } catch (error) {
+      logger.error("Lesson deletion failed:", error);
+      throw error;
+    }
+  }
+
   // Helper methods
   getDefaultDuration(templateId) {
     const durations = {
@@ -227,10 +273,9 @@ class LessonService {
     );
   }
 
-  async saveAudioFile(audioBuffer, filename) {
-    // Implement your file storage logic here (AWS S3, Google Cloud Storage, etc.)
-    // For now, return a placeholder URL
-    return `https://your-storage-bucket.com/audio/${filename}`;
+  // Delay helper for rate limiting
+  delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

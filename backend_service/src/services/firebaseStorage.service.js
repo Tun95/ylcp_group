@@ -5,18 +5,31 @@ const config = require("../../config");
 
 class FirebaseStorageService {
   constructor() {
+    // Skip Firebase initialization in test environment
+    if (process.env.NODE_ENV === "test") {
+      this.isTestMode = true;
+      logger.info("Firebase Storage running in test mode - no initialization");
+      return;
+    }
+
     if (!admin.apps.length) {
+      // Properly handle the private key newlines
+      const privateKey =
+        process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n") ||
+        config.providers.firebase.privateKey;
+
       admin.initializeApp({
         credential: admin.credential.cert({
           projectId: config.providers.firebase.projectId,
           clientEmail: config.providers.firebase.clientEmail,
-          privateKey: config.providers.firebase.privateKey,
+          privateKey: privateKey,
         }),
         storageBucket: config.providers.firebase.storageBucket,
       });
     }
 
     this.bucket = admin.storage().bucket();
+    this.isTestMode = false;
   }
 
   // Upload audio file to Firebase Storage

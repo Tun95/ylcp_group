@@ -34,9 +34,7 @@ module.exports = {
       storageBucket:
         process.env.FIREBASE_STORAGE_BUCKET || "your_bucket.appspot.com",
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL || "your_client_email",
-      privateKey:
-        process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n") ||
-        "your_private_key",
+      privateKey: process.env.FIREBASE_PRIVATE_KEY || "your_private_key",
     },
 
     email: {
