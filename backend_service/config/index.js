@@ -23,6 +23,22 @@ module.exports = {
   },
 
   providers: {
+    ai: {
+      elevenLabsApiKey:
+        process.env.ELEVEN_LABS_API_KEY || "your_eleven_labs_api_key",
+      openAiApiKey: process.env.OPENAI_API_KEY || "your_openai_api_key",
+    },
+
+    firebase: {
+      projectId: process.env.FIREBASE_PROJECT_ID || "your_project_id",
+      storageBucket:
+        process.env.FIREBASE_STORAGE_BUCKET || "your_bucket.appspot.com",
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL || "your_client_email",
+      privateKey:
+        process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n") ||
+        "your_private_key",
+    },
+
     email: {
       service: process.env.EMAIL_SERVICE || "gmail",
       host: process.env.EMAIL_HOST || "smtp.gmail.com",

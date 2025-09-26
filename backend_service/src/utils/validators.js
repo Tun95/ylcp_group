@@ -230,7 +230,7 @@ const updateUserStatusValidation = [
   handleValidationErrors,
 ];
 
-// Lesson validation
+// Add to your existing validators file
 const lessonValidation = [
   body("title")
     .trim()
@@ -252,50 +252,30 @@ const lessonValidation = [
     .isIn(["beginner", "intermediate", "advanced"])
     .withMessage("Difficulty must be beginner, intermediate, or advanced"),
 
-  body("tags").optional().isArray().withMessage("Tags must be an array"),
-
-  body("slides").optional().isArray().withMessage("Slides must be an array"),
+  body("slides")
+    .isArray({ min: 1 })
+    .withMessage("At least one slide is required"),
 
   body("slides.*.template_id")
-    .if(body("slides").exists())
     .notEmpty()
     .withMessage("Slide template ID is required"),
 
   body("slides.*.duration")
-    .if(body("slides").exists())
     .isInt({ min: 1 })
     .withMessage("Slide duration must be at least 1 second"),
 
-  handleValidationErrors,
-];
-
-// Slide validation
-const slideValidation = [
-  body("template_id").notEmpty().withMessage("Template ID is required"),
-
-  body("duration")
-    .isInt({ min: 1 })
-    .withMessage("Duration must be at least 1 second"),
-
-  body("content")
+  body("slides.*.content")
     .optional()
     .isObject()
-    .withMessage("Content must be an object"),
-
-  body("interactions")
-    .optional()
-    .isArray()
-    .withMessage("Interactions must be an array"),
+    .withMessage("Slide content must be an object"),
 
   handleValidationErrors,
 ];
 
-// Status validation
 const lessonStatusValidation = [
   body("status")
     .isIn(["draft", "published", "archived"])
     .withMessage("Status must be draft, published, or archived"),
-
   handleValidationErrors,
 ];
 
@@ -309,6 +289,5 @@ module.exports = {
   updateUserValidation,
   updateUserStatusValidation,
   lessonValidation,
-  slideValidation,
   lessonStatusValidation,
 };

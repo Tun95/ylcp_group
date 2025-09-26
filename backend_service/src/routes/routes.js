@@ -1,5 +1,6 @@
 const { HEALTH_STATUS } = require("../constants/constants");
 const authController = require("../controllers/auth.controller");
+const lessonController = require("../controllers/lesson.controller");
 const userController = require("../controllers/user.controller");
 const isAdmin = require("../middlewares/admin.middleware");
 const {
@@ -12,6 +13,7 @@ const {
   updateProfileValidation,
   updateUserStatusValidation,
   lessonValidation,
+  lessonStatusValidation,
 } = require("../utils/validators");
 
 setupRoutes = (server) => {
@@ -64,6 +66,25 @@ setupRoutes = (server) => {
   server
     .route("/api/admin/stats")
     .get(isAdmin, userController.getDashboardStats);
+
+  // ADMIN LESSON ROUTES
+  server
+    .route("/api/admin/lessons")
+    .post(isAdmin, lessonValidation, lessonController.createLesson)
+    .get(isAdmin, lessonController.getAdminLessons);
+
+  server
+    .route("/api/admin/lessons/:lessonId")
+    .get(isAdmin, lessonController.getLessonById)
+    .put(isAdmin, lessonValidation, lessonController.updateLesson);
+
+  server
+    .route("/api/admin/lessons/:lessonId/status")
+    .put(isAdmin, lessonStatusValidation, lessonController.updateLessonStatus);
+
+  server
+    .route("/api/admin/lessons/:lessonId/regenerate-narration")
+    .post(isAdmin, lessonController.regenerateNarration);
 
   // Health check routes
   server.get("/health", async (req, res) => {

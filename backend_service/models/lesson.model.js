@@ -12,14 +12,29 @@ const slideSchema = new mongoose.Schema({
   },
   interactions: [
     {
-      type: { type: String, required: true },
+      type: { type: String, required: true }, // 'multiple_choice', 'true_false', 'reflection'
       config: mongoose.Schema.Types.Mixed,
       trigger_time: { type: Number, min: 0 },
     },
   ],
   ai_narration: {
-    script: String,
+    script: { type: String, required: true },
     audio_url: String,
+    status: {
+      type: String,
+      enum: ["pending", "generating", "completed", "failed"],
+      default: "pending",
+    },
+    voice_settings: {
+      voice_id: { type: String, default: "21m00Tcm4TlvDq8ikWAM" }, // ElevenLabs default
+      stability: { type: Number, default: 0.5 },
+      similarity_boost: { type: Number, default: 0.5 },
+    },
+  },
+  visual_elements: {
+    background: String,
+    animations: [String],
+    transitions: String,
   },
 });
 
@@ -72,6 +87,24 @@ const lessonSchema = new mongoose.Schema(
       default: "draft",
     },
     published_at: Date,
+    settings: {
+      ai_voice: {
+        voice_id: { type: String, default: "21m00Tcm4TlvDq8ikWAM" },
+        stability: { type: Number, default: 0.5 },
+        similarity_boost: { type: Number, default: 0.5 },
+      },
+      auto_generate_narration: { type: Boolean, default: true },
+      interaction_frequency: {
+        type: String,
+        enum: ["low", "medium", "high"],
+        default: "medium",
+      },
+    },
+    narration_status: {
+      type: String,
+      enum: ["not_started", "generating", "completed", "failed"],
+      default: "not_started",
+    },
   },
   {
     timestamps: true,
@@ -92,10 +125,5 @@ lessonSchema.pre("save", function (next) {
   }
   next();
 });
-
-// Index for better query performance
-lessonSchema.index({ created_by: 1, status: 1 });
-lessonSchema.index({ category: 1, status: 1 });
-lessonSchema.index({ status: 1, published_at: -1 });
 
 module.exports = mongoose.model("Lesson", lessonSchema);
