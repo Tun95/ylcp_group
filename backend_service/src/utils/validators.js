@@ -230,7 +230,7 @@ const updateUserStatusValidation = [
   handleValidationErrors,
 ];
 
-// Add to your existing validators file
+// lesson Validation
 const lessonValidation = [
   body("title")
     .trim()

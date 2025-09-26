@@ -1,5 +1,5 @@
 // backend_service/src/test/services/lesson.service.test.js
-const lessonService = require("../services/lesson.service"); // Import the instance
+const lessonService = require("../services/lesson.service");
 const AINarrationService = require("../services/aiNarration.service");
 const Lesson = require("../../models/lesson.model");
 const { ERROR_MESSAGES } = require("../constants/constants");
@@ -17,7 +17,7 @@ jest.mock("../services/firebaseStorage.service", () => ({
   generateUniqueFilename: jest.fn().mockReturnValue("test-audio.mp3"),
 }));
 
-// Mock logger to avoid logtail issues
+// Mock logger
 jest.mock("../../config/logger", () => ({
   error: jest.fn(),
   warn: jest.fn(),
@@ -42,37 +42,51 @@ describe("LessonService", () => {
         },
       ],
       created_by: "user123",
+      settings: { auto_generate_narration: true }, // ADD THIS
     };
 
     test("should create lesson with processed slides", async () => {
-      const mockProcessedSlides = [
-        {
-          template_id: "title-slide",
-          content: { title: "Welcome" },
-          duration: 8,
-          slide_number: 1,
-          ai_narration: { script: "Welcome narration", status: "pending" },
-        },
-      ];
-
-      const mockLesson = {
+      // Mock the processed lesson data
+      const mockProcessedLesson = {
         _id: "lesson123",
         ...mockLessonData,
-        slides: mockProcessedSlides,
-        save: jest.fn().mockResolvedValue(true),
-        settings: { auto_generate_narration: true },
+        slides: [
+          {
+            template_id: "title-slide",
+            content: { title: "Welcome" },
+            duration: 8,
+            slide_number: 1,
+            ai_narration: { script: "Welcome narration", status: "pending" },
+          },
+        ],
+        save: jest.fn().mockResolvedValue(this), // Fix: return 'this' for chaining
       };
 
-      Lesson.mockImplementation(() => mockLesson);
-      AINarrationService.generateNarrationScript.mockResolvedValue(
-        "Welcome narration"
-      );
+      // Mock Lesson constructor
+      Lesson.mockImplementation(() => mockProcessedLesson);
+
+      // Mock getLessonById to return the populated lesson
+      const mockPopulatedLesson = {
+        _id: "lesson123",
+        title: "Test Lesson",
+        slides: [],
+        settings: { auto_generate_narration: true }, // ADD THIS
+      };
+
+      // Fix: Properly mock the Mongoose query chain for getLessonById
+      const mockQueryChain = {
+        populate: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue(mockPopulatedLesson),
+      };
+      
+      Lesson.findById = jest.fn().mockReturnValue(mockQueryChain);
+      AINarrationService.generateNarrationScript.mockResolvedValue("Welcome narration");
 
       const result = await lessonService.createLesson(mockLessonData);
 
       expect(Lesson).toHaveBeenCalled();
-      expect(mockLesson.save).toHaveBeenCalled();
-      expect(result).toBeDefined();
+      expect(mockProcessedLesson.save).toHaveBeenCalled();
+      expect(result.title).toBe("Test Lesson");
     });
 
     test("should handle errors during lesson creation", async () => {
@@ -81,9 +95,7 @@ describe("LessonService", () => {
         throw error;
       });
 
-      await expect(lessonService.createLesson(mockLessonData)).rejects.toThrow(
-        "Database error"
-      );
+      await expect(lessonService.createLesson(mockLessonData)).rejects.toThrow("Database error");
     });
   });
 
@@ -96,9 +108,7 @@ describe("LessonService", () => {
         },
       ];
 
-      AINarrationService.generateNarrationScript.mockResolvedValue(
-        "Narration for slide 1"
-      );
+      AINarrationService.generateNarrationScript.mockResolvedValue("Narration for slide 1");
 
       const result = await lessonService.processSlides(mockSlides);
 
@@ -115,9 +125,7 @@ describe("LessonService", () => {
         },
       ];
 
-      AINarrationService.generateNarrationScript.mockRejectedValue(
-        new Error("API failed")
-      );
+      AINarrationService.generateNarrationScript.mockRejectedValue(new Error("API failed"));
 
       const result = await lessonService.processSlides(mockSlides);
 
@@ -132,12 +140,13 @@ describe("LessonService", () => {
         title: "Test Lesson",
       };
 
-      const mockQuery = {
+      // Fix: Ensure the mock returns a Promise that resolves to the lesson
+      const mockQueryChain = {
         populate: jest.fn().mockReturnThis(),
-        lean: jest.fn().mockResolvedValue(mockLesson),
+        lean: jest.fn().mockResolvedValue(mockLesson), // This should be a function that returns a Promise
       };
 
-      Lesson.findById.mockReturnValue(mockQuery);
+      Lesson.findById = jest.fn().mockReturnValue(mockQueryChain);
 
       const result = await lessonService.getLessonById("lesson123");
 
@@ -146,12 +155,13 @@ describe("LessonService", () => {
     });
 
     test("should throw error when lesson not found", async () => {
-      const mockQuery = {
+      // Fix: Mock to properly return null for not found case
+      const mockQueryChain = {
         populate: jest.fn().mockReturnThis(),
-        lean: jest.fn().mockResolvedValue(null),
+        lean: jest.fn().mockResolvedValue(null), // This should resolve to null
       };
 
-      Lesson.findById.mockReturnValue(mockQuery);
+      Lesson.findById = jest.fn().mockReturnValue(mockQueryChain);
 
       await expect(lessonService.getLessonById("nonexistent")).rejects.toThrow(
         ERROR_MESSAGES.LESSON_NOT_FOUND
@@ -166,15 +176,16 @@ describe("LessonService", () => {
         { _id: "2", title: "Lesson 2" },
       ];
 
-      const mockQuery = {
+      // Fix: Ensure the mock returns a Promise that resolves to the lessons array
+      const mockQueryChain = {
         populate: jest.fn().mockReturnThis(),
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
-        lean: jest.fn().mockResolvedValue(mockLessons),
+        lean: jest.fn().mockResolvedValue(mockLessons), // This should resolve to the array
       };
 
-      Lesson.find.mockReturnValue(mockQuery);
+      Lesson.find = jest.fn().mockReturnValue(mockQueryChain);
       Lesson.countDocuments.mockResolvedValue(10);
 
       const filters = { status: "published", category: "Safety" };
@@ -198,14 +209,8 @@ describe("LessonService", () => {
     test("getDefaultNarration should return contextual narrations", () => {
       const content = { title: "Test Title", question: "Test Question" };
 
-      const titleNarration = lessonService.getDefaultNarration(
-        "title-slide",
-        content
-      );
-      const quizNarration = lessonService.getDefaultNarration(
-        "quiz-slide",
-        content
-      );
+      const titleNarration = lessonService.getDefaultNarration("title-slide", content);
+      const quizNarration = lessonService.getDefaultNarration("quiz-slide", content);
 
       expect(titleNarration).toContain("Test Title");
       expect(quizNarration).toContain("Test Question");

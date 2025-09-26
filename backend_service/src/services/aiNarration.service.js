@@ -69,9 +69,12 @@ class AINarrationService {
   async generateSpeech(text, voiceSettings = {}) {
     try {
       // If no ElevenLabs key, return mock data for development
-      if (!this.elevenLabsApiKey) {
+      if (
+        !this.elevenLabsApiKey ||
+        this.elevenLabsApiKey === "your_eleven_labs_api_key"
+      ) {
         logger.warn("ElevenLabs API key not configured, returning mock audio");
-        return this.getMockAudioData(text);
+        return this.getMockAudioData(text); // This should return, not continue
       }
 
       const response = await axios.post(
@@ -93,7 +96,7 @@ class AINarrationService {
             Accept: "audio/mpeg",
           },
           responseType: "arraybuffer",
-          timeout: 60000, // 60 second timeout for audio generation
+          timeout: 60000,
         }
       );
 
@@ -116,11 +119,12 @@ class AINarrationService {
     } catch (error) {
       logger.error("Speech generation failed:", error);
 
-      // Fallback: Return mock audio data for development
-      if (config.env === "development") {
-        return this.getMockAudioData(text);
+      // Always return mock data in test/development, only throw in production
+      if (config.env === "production") {
+        throw new Error("Failed to generate speech");
       }
-      throw new Error("Failed to generate speech");
+
+      return this.getMockAudioData(text);
     }
   }
 

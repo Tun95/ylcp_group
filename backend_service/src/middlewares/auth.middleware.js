@@ -18,7 +18,18 @@ const authMiddleware = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, config.jwt.secret);
-    const user = await User.findById(decoded.id).select("-password");
+
+    // Try multiple possible ID fields
+    const userId = decoded.userId || decoded.id || decoded._id;
+
+    if (!userId) {
+      return sendResponse(res, 401, {
+        status: STATUS.FAILED,
+        message: ERROR_MESSAGES.INVALID_TOKEN,
+      });
+    }
+
+    const user = await User.findById(userId).select("-password");
 
     if (!user) {
       return sendResponse(res, 401, {
@@ -30,6 +41,7 @@ const authMiddleware = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    console.error("JWT Verification Error:", error.message);
     sendResponse(res, 401, {
       status: STATUS.FAILED,
       message: ERROR_MESSAGES.INVALID_TOKEN,
