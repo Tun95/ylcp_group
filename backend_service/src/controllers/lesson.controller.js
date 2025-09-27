@@ -10,7 +10,7 @@ class LessonController {
     try {
       const lessonData = {
         ...req.body,
-        created_by: req.user.userId, // Admin user ID
+        created_by: req.user, // Admin user ID
       };
 
       const lesson = await lessonService.createLesson(lessonData);
@@ -25,7 +25,7 @@ class LessonController {
       logger.error("Lesson creation error:", {
         controller: "LessonController",
         method: "createLesson",
-        userId: req.user.userId,
+        userId: req.user,
         error: error.message,
       });
 
