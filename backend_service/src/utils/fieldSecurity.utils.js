@@ -1,4 +1,4 @@
-// utils/fieldSecurity.utils.js
+// backend_service/src/utils/fieldSecurity.utils.js
 class FieldSecurity {
   constructor() {
     // Fields that should NEVER be updatable by users (even admins should be cautious)
