@@ -30,8 +30,14 @@ class LessonService {
   // Generate interactive video for lesson
   async generateLessonVideo(lessonId) {
     try {
+      logger.info(`🎬 Starting video generation for lesson: ${lessonId}`);
+
       const lesson = await Lesson.findById(lessonId);
       if (!lesson) throw new Error("Lesson not found");
+
+      logger.info(
+        `📊 Lesson details: ${lesson.slides.length} slides, title: ${lesson.title}`
+      );
 
       const videoResult = await VideoGenerationService.generateInteractiveVideo(
         lesson
@@ -47,17 +53,27 @@ class LessonService {
       };
 
       await lesson.save();
-      logger.info(`Video generated for lesson ${lessonId}`);
+      logger.info(`✅ Video generated SUCCESSFULLY for lesson ${lessonId}`);
+      logger.info(`📹 Video URL: ${videoResult.video_url}`);
+      logger.info(`⏱️ Duration: ${videoResult.duration}s`);
 
       return lesson;
     } catch (error) {
+      logger.error(`❌ Video generation FAILED for lesson ${lessonId}:`, error);
+      logger.error(`🔍 Error details:`, {
+        message: error.message,
+        stack: error.stack,
+        lessonId: lessonId,
+      });
+
       const lesson = await Lesson.findById(lessonId);
       if (lesson) {
         lesson.interactive_video.status = "failed";
         lesson.interactive_video.error = error.message;
+        lesson.interactive_video.error_stack = error.stack; // Store stack for debugging
         await lesson.save();
       }
-      logger.error(`Video generation failed for lesson ${lessonId}:`, error);
+
       throw error;
     }
   }

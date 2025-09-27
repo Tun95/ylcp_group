@@ -32,14 +32,24 @@ module.exports = {
       },
     },
 
-    firebase: {
-      projectId: process.env.FIREBASE_PROJECT_ID || "your_project_id",
-      storageBucket:
-        process.env.FIREBASE_STORAGE_BUCKET || "your_bucket.appspot.com",
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL || "your_client_email",
-      privateKey: process.env.FIREBASE_PRIVATE_KEY || "your_private_key",
-    },
+    storage: {
+      cloudinary: {
+        api_key: process.env.CLOUDINARY_API_KEY || "your_cloudinary_api_key",
+        api_secret:
+          process.env.CLOUDINARY_API_SECRET || "your_cloudinary_api_secret",
+        cloud_name:
+          process.env.CLOUDINARY_CLOUD_NAME || "your_cloudinary_cloud_name",
+        url: process.env.CLOUDINARY_URL || "your_cloudinary_url",
+      },
 
+      firebase: {
+        projectId: process.env.FIREBASE_PROJECT_ID || "your_project_id",
+        storageBucket:
+          process.env.FIREBASE_STORAGE_BUCKET || "your_bucket.appspot.com",
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL || "your_client_email",
+        privateKey: process.env.FIREBASE_PRIVATE_KEY || "your_private_key",
+      },
+    },
     email: {
       service: process.env.EMAIL_SERVICE || "gmail",
       host: process.env.EMAIL_HOST || "smtp.gmail.com",

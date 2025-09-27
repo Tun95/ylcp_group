@@ -16,15 +16,15 @@ class FirebaseStorageService {
       // Properly handle the private key newlines
       const privateKey =
         process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n") ||
-        config.providers.firebase.privateKey;
+        config.providers.storage.firebase.privateKey;
 
       admin.initializeApp({
         credential: admin.credential.cert({
-          projectId: config.providers.firebase.projectId,
-          clientEmail: config.providers.firebase.clientEmail,
+          projectId: config.providers.storage.firebase.projectId,
+          clientEmail: config.providers.storage.firebase.clientEmail,
           privateKey: privateKey,
         }),
-        storageBucket: config.providers.firebase.storageBucket,
+        storageBucket: config.providers.storage.firebase.storageBucket,
       });
     }
 

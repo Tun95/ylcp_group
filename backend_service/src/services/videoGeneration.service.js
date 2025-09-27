@@ -4,10 +4,10 @@ const { exec } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const logger = require("../../config/logger");
-const FirebaseStorageService = require("./firebaseStorage.service");
 const config = require("../../config");
 const { v4: uuidv4 } = require("uuid");
 const { createCanvas } = require("canvas");
+const cloudinaryService = require("./cloudinary.service");
 
 class VideoGenerationService {
   constructor() {
@@ -52,10 +52,10 @@ class VideoGenerationService {
 
       // 4. Upload video to storage
       const videoBuffer = fs.readFileSync(videoResult.videoPath);
-      const uploadResult = await FirebaseStorageService.uploadVideoFile(
+      const uploadResult = await cloudinaryService.uploadVideoFile(
         videoBuffer,
-        `interactive_video_${Date.now()}.mp4`,
-        `lessons/${lesson._id}`
+        `lesson_${lesson._id}_video`,
+        `ylcp/lessons/${lesson._id}`
       );
 
       // 5. Generate thumbnail from first slide
@@ -261,6 +261,7 @@ class VideoGenerationService {
 
       const duration = this.calculateAudioDuration(text);
 
+      logger.info(`Generated speech for text: "${text}"`);
       return {
         audioBuffer: response.data,
         duration: duration,
@@ -303,6 +304,8 @@ class VideoGenerationService {
           duration: slide.duration || 5, // Default duration if not specified
           content: slide.content,
         });
+
+        logger.info(`Generated visual for slide ${index + 1}`);
       } catch (error) {
         logger.error(
           `Failed to generate visual for slide ${index + 1}:`,
@@ -453,9 +456,10 @@ class VideoGenerationService {
       );
 
       const thumbnailBuffer = fs.readFileSync(thumbnailPath);
-      const uploadResult = await FirebaseStorageService.uploadImageFile(
+      const uploadResult = await cloudinaryService.uploadImageFile(
         thumbnailBuffer,
-        `lessons/${lessonId}/thumbnail.jpg`
+        `lesson_${lessonId}_thumbnail`,
+        `ylcp/lessons/${lessonId}`
       );
 
       // Clean up temporary thumbnail file
@@ -652,8 +656,9 @@ class VideoGenerationService {
       if (fs.existsSync(file)) {
         try {
           fs.unlinkSync(file);
+          logger.debug(`[CLEANUP] Deleted: ${file}`);
         } catch (error) {
-          logger.warn(`Could not delete temp file: ${file}`, error.message);
+          logger.warn(`[CLEANUP] Could not delete: ${file}`, error.message);
         }
       }
     }
