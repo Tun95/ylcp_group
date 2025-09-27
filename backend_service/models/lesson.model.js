@@ -2,39 +2,49 @@
 const mongoose = require("mongoose");
 
 const slideSchema = new mongoose.Schema({
-  slide_number: { type: Number, required: true },
-  template_id: { type: String, required: true },
-  duration: { type: Number, required: true, min: 1 },
+  slide_number: { type: Number },
+  template_id: { type: String },
   content: {
     type: Map,
     of: mongoose.Schema.Types.Mixed,
     default: {},
   },
+
+  // NARRATION SCRIPT (for video audio track)
+  narration_script: {
+    type: String,
+  },
+
+  // INTERACTIONS (appear during video playback)
   interactions: [
     {
-      type: { type: String, required: true }, // 'multiple_choice', 'true_false', 'reflection'
-      config: mongoose.Schema.Types.Mixed,
-      trigger_time: { type: Number, min: 0 },
+      type: {
+        type: String,
+        required: true,
+        enum: [
+          "multiple_choice",
+          "true_false",
+          "reflection",
+          "knowledge_check",
+        ],
+      },
+      config: {
+        question: String,
+        options: [String],
+        correct_answer: mongoose.Schema.Types.Mixed,
+        explanation: String,
+        required: { type: Boolean, default: true }, // All interactions required
+        points: { type: Number, default: 1 },
+      },
+      trigger_time: { type: Number, min: 0 }, // Seconds into slide video
     },
   ],
-  ai_narration: {
-    script: { type: String, required: true },
-    audio_url: String,
-    status: {
-      type: String,
-      enum: ["pending", "generating", "completed", "failed"],
-      default: "pending",
-    },
-    voice_settings: {
-      voice_id: { type: String, default: "21m00Tcm4TlvDq8ikWAM" }, // ElevenLabs default
-      stability: { type: Number, default: 0.5 },
-      similarity_boost: { type: Number, default: 0.5 },
-    },
-  },
-  visual_elements: {
+
+  // VISUAL SETTINGS (for video generation)
+  visual_settings: {
+    theme: { type: String, default: "professional" },
     background: String,
     animations: [String],
-    transitions: String,
   },
 });
 
@@ -56,72 +66,69 @@ const lessonSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    thumbnail: {
-      type: String,
-      default: "",
-    },
-    estimated_duration: {
-      type: Number,
-      min: 0,
-    },
     difficulty: {
       type: String,
       enum: ["beginner", "intermediate", "advanced"],
       default: "beginner",
     },
-    tags: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
+    tags: [String],
+
     slides: [slideSchema],
     created_by: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
+
     status: {
       type: String,
       enum: ["draft", "published", "archived"],
       default: "draft",
     },
     published_at: Date,
-    settings: {
-      ai_voice: {
+
+    // VIDEO SETTINGS
+    video_settings: {
+      aspect_ratio: { type: String, enum: ["16:9", "9:16"], default: "16:9" },
+      voice: {
         voice_id: { type: String, default: "21m00Tcm4TlvDq8ikWAM" },
         stability: { type: Number, default: 0.5 },
-        similarity_boost: { type: Number, default: 0.5 },
-      },
-      auto_generate_narration: { type: Boolean, default: true },
-      interaction_frequency: {
-        type: String,
-        enum: ["low", "medium", "high"],
-        default: "medium",
       },
     },
-    narration_status: {
-      type: String,
-      enum: ["not_started", "generating", "completed", "failed"],
-      default: "not_started",
+
+    // INTERACTIVE VIDEO (REQUIRED)
+    interactive_video: {
+      video_url: { type: String },
+      thumbnail_url: String,
+      duration: Number, // Total video duration in seconds
+      status: {
+        type: String,
+        enum: ["generating", "completed", "failed"],
+        default: "generating",
+      },
+      generated_at: Date,
+    },
+
+    // COMPLETION TRACKING (for future user progress)
+    completion_requirements: {
+      must_complete_all_interactions: { type: Boolean, default: true },
+      minimum_watch_percentage: { type: Number, default: 90 }, // 90% of video
     },
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
   }
 );
 
-// Virtual for total duration calculation
-lessonSchema.virtual("total_duration").get(function () {
-  return this.slides.reduce((total, slide) => total + slide.duration, 0);
-});
-
-// Pre-save middleware to update estimated_duration
+// ADD to lesson.model.js - Pre-save middleware
 lessonSchema.pre("save", function (next) {
+  // Auto-generate slide numbers if not provided
   if (this.isModified("slides")) {
-    this.estimated_duration = this.total_duration;
+    this.slides.forEach((slide, index) => {
+      if (!slide.slide_number) {
+        slide.slide_number = index + 1;
+      }
+    });
   }
   next();
 });

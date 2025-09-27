@@ -24,9 +24,12 @@ module.exports = {
 
   providers: {
     ai: {
-      elevenLabsApiKey:
-        process.env.ELEVEN_LABS_API_KEY || "your_eleven_labs_api_key",
-      openAiApiKey: process.env.OPENAI_API_KEY || "your_openai_api_key",
+      elevenLabs: {
+        apikey: process.env.ELEVEN_LABS_API_KEY || "your_eleven_labs_api_key",
+      },
+      openAi: {
+        apikey: process.env.OPENAI_API_KEY || "your_openai_api_key",
+      },
     },
 
     firebase: {

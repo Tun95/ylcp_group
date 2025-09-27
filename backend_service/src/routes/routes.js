@@ -95,38 +95,19 @@ setupRoutes = (server) => {
   // ADMIN LESSON ROUTES
   server
     .route("/api/admin/lessons")
-    .post(
-      isAdmin,
-      requireActiveUser,
-      lessonValidation,
-      lessonController.createLesson
-    )
+    .post(isAdmin, requireActiveUser, lessonController.createLesson)
     .get(isAdmin, requireActiveUser, lessonController.getAdminLessons);
 
   server
     .route("/api/admin/lessons/:lessonId")
     .get(isAdmin, requireActiveUser, lessonController.getLessonById)
-    .put(
-      isAdmin,
-      requireActiveUser,
-      lessonValidation,
-      lessonController.updateLesson
-    );
+    .put(isAdmin, requireActiveUser, lessonController.updateLesson)
+    .delete(isAdmin, requireActiveUser, lessonController.deleteLesson);
 
   server
-    .route("/api/admin/lessons/:lessonId/status")
-    .put(
-      isAdmin,
-      requireActiveUser,
-      lessonStatusValidation,
-      lessonController.updateLessonStatus
-    );
+    .route("/api/admin/lessons/:lessonId/regenerate-video")
+    .post(isAdmin, requireActiveUser, lessonController.regenerateVideo);
 
-  server
-    .route("/api/admin/lessons/:lessonId/regenerate-narration")
-    .post(isAdmin, requireActiveUser, lessonController.regenerateNarration);
-
-  // Health check routes
   server.get("/health", async (req, res) => {
     res.status(200).json({ status: HEALTH_STATUS.UP });
   });
