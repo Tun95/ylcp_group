@@ -1,23 +1,19 @@
-const config = require("../../config");
 const logger = require("../../config/logger");
 const userModel = require("../../models/user.model");
 const { ERROR_MESSAGES } = require("../constants/constants");
+const fieldSecurity = require("../utils/fieldSecurity.utils");
 
 class UserService {
   // Get user by ID
-  async getUserById(userId) {
+  async getUserById(userId, options = {}) {
     try {
-      const user = await userModel
-        .findById(userId)
-        .select(
-          "-password -password_reset_token -password_reset_expires -account_verification_otp -account_verification_otp_expires"
-        );
+      const user = await userModel.findById(userId);
 
       if (!user) {
         throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
       }
 
-      return user;
+      return fieldSecurity.sanitizeUser(user, options);
     } catch (error) {
       logger.error(error, {
         service: "UserService",
@@ -29,23 +25,27 @@ class UserService {
   }
 
   // Update user profile
-  async updateUser(userId, updateData) {
+  async updateUser(userId, updateData, options = {}) {
     try {
-      const user = await userModel
-        .findByIdAndUpdate(
-          userId,
-          { $set: updateData },
-          { new: true, runValidators: true }
-        )
-        .select(
-          "-password -password_reset_token -password_reset_expires -account_verification_otp -account_verification_otp_expires"
-        );
+      // Filter update data based on permissions
+      const filteredData = fieldSecurity.filterUpdateData(updateData, options);
+
+      if (Object.keys(filteredData).length === 0) {
+        throw new Error("No valid fields to update");
+      }
+
+      const user = await userModel.findByIdAndUpdate(
+        userId,
+        { $set: filteredData },
+        { new: true, runValidators: true }
+      );
 
       if (!user) {
         throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
       }
 
-      return user;
+      // Return sanitized user
+      return fieldSecurity.sanitizeUser(user, options);
     } catch (error) {
       logger.error(error, {
         service: "UserService",
@@ -57,7 +57,7 @@ class UserService {
   }
 
   // Deactivate user account
-  async deactivateUser(userId) {
+  async deactivateUser(userId, options = {}) {
     try {
       const user = await userModel.findByIdAndUpdate(
         userId,
@@ -69,7 +69,7 @@ class UserService {
         throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
       }
 
-      return true;
+      return fieldSecurity.sanitizeUser(user, options);
     } catch (error) {
       logger.error(error, {
         service: "UserService",
@@ -104,7 +104,10 @@ class UserService {
         query.status = status;
       }
 
-      const skip = (page - 1) * limit;
+      // Ensure page and limit are valid numbers
+      const currentPage = Math.max(1, parseInt(page) || 1);
+      const pageLimit = Math.max(1, parseInt(limit) || 10);
+      const skip = (currentPage - 1) * pageLimit;
 
       const [users, total] = await Promise.all([
         userModel
@@ -114,20 +117,20 @@ class UserService {
           )
           .sort({ createdAt: -1 })
           .skip(skip)
-          .limit(limit),
+          .limit(pageLimit),
         userModel.countDocuments(query),
       ]);
 
-      const totalPages = Math.ceil(total / limit);
+      const totalPages = Math.ceil(total / pageLimit);
 
       return {
         users,
         pagination: {
-          currentPage: page,
-          totalPages,
+          currentPage: currentPage,
+          totalPages: totalPages,
           totalUsers: total,
-          hasNext: page < totalPages,
-          hasPrev: page > 1,
+          hasNext: currentPage < totalPages,
+          hasPrev: currentPage > 1,
         },
       };
     } catch (error) {

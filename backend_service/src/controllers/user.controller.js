@@ -7,7 +7,7 @@ class UserController {
   // Get user profile
   async getProfile(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user;
       const user = await userService.getUserById(userId);
 
       return sendResponse(res, 200, {
@@ -23,7 +23,7 @@ class UserController {
 
       return sendResponse(res, 500, {
         status: STATUS.FAILED,
-        message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        message: error.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
       });
     }
   }
@@ -31,7 +31,7 @@ class UserController {
   // Update user profile
   async updateProfile(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user;
       const updateData = req.body;
 
       const updatedUser = await userService.updateUser(userId, updateData);
@@ -57,7 +57,7 @@ class UserController {
 
       return sendResponse(res, 500, {
         status: STATUS.FAILED,
-        message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        message: error.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
       });
     }
   }
@@ -65,7 +65,7 @@ class UserController {
   // Deactivate account
   async deactivateAccount(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user;
 
       await userService.deactivateUser(userId);
 
@@ -89,7 +89,7 @@ class UserController {
 
       return sendResponse(res, 500, {
         status: STATUS.FAILED,
-        message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        message: error.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
       });
     }
   }
@@ -120,7 +120,7 @@ class UserController {
 
       return sendResponse(res, 500, {
         status: STATUS.FAILED,
-        message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        message: error.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
       });
     }
   }
@@ -152,7 +152,7 @@ class UserController {
 
       return sendResponse(res, 500, {
         status: STATUS.FAILED,
-        message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        message: error.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
       });
     }
   }
@@ -187,7 +187,7 @@ class UserController {
 
       return sendResponse(res, 500, {
         status: STATUS.FAILED,
-        message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        message: error.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
       });
     }
   }
@@ -227,7 +227,7 @@ class UserController {
 
       return sendResponse(res, 500, {
         status: STATUS.FAILED,
-        message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        message: error.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
       });
     }
   }
@@ -276,7 +276,7 @@ class UserController {
 
       return sendResponse(res, 500, {
         status: STATUS.FAILED,
-        message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        message: error.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
       });
     }
   }
@@ -322,7 +322,7 @@ class UserController {
 
       return sendResponse(res, 500, {
         status: STATUS.FAILED,
-        message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        message: error.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
       });
     }
   }
@@ -345,7 +345,7 @@ class UserController {
 
       return sendResponse(res, 500, {
         status: STATUS.FAILED,
-        message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        message: error.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
       });
     }
   }

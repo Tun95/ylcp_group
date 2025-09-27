@@ -1,6 +1,59 @@
 // backend_service/src/utils/validators.js
 const { body, param, query, validationResult } = require("express-validator");
 const { STATUS, ERROR_MESSAGES } = require("../constants/constants");
+const userModel = require("../../models/user.model");
+const { sendResponse } = require("./utils");
+
+const checkUserStatus = (options = {}) => {
+  const {
+    checkVerified = true,
+    allowedStatuses = ["active"],
+    checkBlocked = true,
+  } = options;
+
+  return async (req, res, next) => {
+    try {
+      // User is already attached to req.user by authMiddleware
+      const user = req.user;
+
+      if (!user) {
+        return sendResponse(res, 401, {
+          status: STATUS.FAILED,
+          message: ERROR_MESSAGES.INVALID_TOKEN,
+        });
+      }
+
+      // Check if account is blocked/closed
+      if (checkBlocked && !allowedStatuses.includes(user.status)) {
+        return sendResponse(res, 403, {
+          status: STATUS.FAILED,
+          message: `Account is ${user.status}. Please contact support.`,
+        });
+      }
+
+      // Check if account is verified
+      if (checkVerified && !user.is_account_verified) {
+        return sendResponse(res, 403, {
+          status: STATUS.FAILED,
+          message: "Please verify your account to access this resource",
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error("User status check error:", error);
+      return sendResponse(res, 500, {
+        status: STATUS.FAILED,
+        message: "Error checking user status",
+      });
+    }
+  };
+};
+
+// Specific middleware variations for common use cases
+const requireActiveUser = checkUserStatus(); // Default: active + verified
+const requireActiveOnly = checkUserStatus({ checkVerified: false }); // Active but not necessarily verified
+const requireVerifiedOnly = checkUserStatus({ checkBlocked: false }); // Verified but status can be anything
 
 // Common validation error handler
 const handleValidationErrors = (req, res, next) => {
@@ -188,6 +241,40 @@ const updateProfileValidation = [
   handleValidationErrors,
 ];
 
+// Admin Get Users Validation
+const getUsersValidation = [
+  query("page")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Page must be a positive integer")
+    .toInt(),
+
+  query("limit")
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Limit must be between 1 and 100")
+    .toInt(),
+
+  query("search")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage("Search term must be less than 100 characters"),
+
+  query("role")
+    .optional()
+    .isIn(["user", "admin"])
+    .withMessage("Role must be user or admin"),
+
+  query("status")
+    .optional()
+    .isIn(["active", "blocked", "closed"])
+    .withMessage("Status must be active, blocked, or closed"),
+
+  handleValidationErrors,
+];
+
 // Update User Validation (Admin)
 const updateUserValidation = [
   param("userId").isMongoId().withMessage("Invalid user ID"),
@@ -280,12 +367,19 @@ const lessonStatusValidation = [
 ];
 
 module.exports = {
+  checkUserStatus,
+  requireActiveUser,
+  requireActiveOnly,
+  requireVerifiedOnly,
+
   signupValidation,
   signinValidation,
   verifyOtpValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
+
   updateProfileValidation,
+  getUsersValidation,
   updateUserValidation,
   updateUserStatusValidation,
   lessonValidation,

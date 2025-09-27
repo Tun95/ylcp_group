@@ -14,6 +14,8 @@ const {
   updateUserStatusValidation,
   lessonValidation,
   lessonStatusValidation,
+  getUsersValidation,
+  requireActiveUser,
 } = require("../utils/validators");
 
 setupRoutes = (server) => {
@@ -41,50 +43,88 @@ setupRoutes = (server) => {
   // User Routes
   server
     .route("/api/user/profile")
-    .get(userController.getProfile)
-    .put(updateProfileValidation, userController.updateProfile);
+    .get(requireActiveUser, userController.getProfile)
+    .put(
+      updateProfileValidation,
+      requireActiveUser,
+      userController.updateProfile
+    );
 
-  server.route("/api/user/deactivate").put(userController.deactivateAccount);
+  server
+    .route("/api/user/deactivate")
+    .put(requireActiveUser, userController.deactivateAccount);
 
   // Admin Routes (auth + admin middleware)
-  server.route("/api/admin/users").get(isAdmin, userController.getAllUsers);
+  server
+    .route("/api/admin/users")
+    .get(
+      isAdmin,
+      requireActiveUser,
+      getUsersValidation,
+      userController.getAllUsers
+    );
 
   server
     .route("/api/admin/users/:userId")
-    .get(isAdmin, userController.getUserById)
-    .put(isAdmin, updateUserValidation, userController.updateUser)
-    .delete(isAdmin, userController.deleteUser);
+    .get(isAdmin, requireActiveUser, userController.getUserById)
+    .put(
+      isAdmin,
+      requireActiveUser,
+      updateUserValidation,
+      userController.updateUser
+    )
+    .delete(isAdmin, requireActiveUser, userController.deleteUser);
 
   server
     .route("/api/admin/users/:userId/status")
-    .put(isAdmin, updateUserStatusValidation, userController.updateUserStatus);
+    .put(
+      isAdmin,
+      requireActiveUser,
+      updateUserStatusValidation,
+      userController.updateUserStatus
+    );
 
   server
     .route("/api/admin/users/:userId/role")
-    .put(isAdmin, userController.changeUserRole);
+    .put(isAdmin, requireActiveUser, userController.changeUserRole);
 
   server
     .route("/api/admin/stats")
-    .get(isAdmin, userController.getDashboardStats);
+    .get(isAdmin, requireActiveUser, userController.getDashboardStats);
 
   // ADMIN LESSON ROUTES
   server
     .route("/api/admin/lessons")
-    .post(isAdmin, lessonValidation, lessonController.createLesson)
-    .get(isAdmin, lessonController.getAdminLessons);
+    .post(
+      isAdmin,
+      requireActiveUser,
+      lessonValidation,
+      lessonController.createLesson
+    )
+    .get(isAdmin, requireActiveUser, lessonController.getAdminLessons);
 
   server
     .route("/api/admin/lessons/:lessonId")
-    .get(isAdmin, lessonController.getLessonById)
-    .put(isAdmin, lessonValidation, lessonController.updateLesson);
+    .get(isAdmin, requireActiveUser, lessonController.getLessonById)
+    .put(
+      isAdmin,
+      requireActiveUser,
+      lessonValidation,
+      lessonController.updateLesson
+    );
 
   server
     .route("/api/admin/lessons/:lessonId/status")
-    .put(isAdmin, lessonStatusValidation, lessonController.updateLessonStatus);
+    .put(
+      isAdmin,
+      requireActiveUser,
+      lessonStatusValidation,
+      lessonController.updateLessonStatus
+    );
 
   server
     .route("/api/admin/lessons/:lessonId/regenerate-narration")
-    .post(isAdmin, lessonController.regenerateNarration);
+    .post(isAdmin, requireActiveUser, lessonController.regenerateNarration);
 
   // Health check routes
   server.get("/health", async (req, res) => {
