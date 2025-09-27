@@ -8,7 +8,7 @@ class UserController {
   async getProfile(req, res) {
     try {
       const userId = req.user;
-      const user = await userService.getUserById(userId);
+      const user = await userService.getUserById(userId, { isAdmin: false });
 
       return sendResponse(res, 200, {
         status: STATUS.SUCCESS,
@@ -34,7 +34,9 @@ class UserController {
       const userId = req.user;
       const updateData = req.body;
 
-      const updatedUser = await userService.updateUser(userId, updateData);
+      const updatedUser = await userService.updateUser(userId, updateData, {
+        isAdmin: false,
+      });
 
       return sendResponse(res, 200, {
         status: STATUS.SUCCESS,
@@ -129,7 +131,7 @@ class UserController {
   async getUserById(req, res) {
     try {
       const { userId } = req.params;
-      const user = await userService.getUserById(userId);
+      const user = await userService.getUserById(userId, { isAdmin: true });
 
       return sendResponse(res, 200, {
         status: STATUS.SUCCESS,
@@ -163,7 +165,9 @@ class UserController {
       const { userId } = req.params;
       const updateData = req.body;
 
-      const updatedUser = await userService.updateUser(userId, updateData);
+      const updatedUser = await userService.updateUser(userId, updateData, {
+        isAdmin: true,
+      });
 
       return sendResponse(res, 200, {
         status: STATUS.SUCCESS,

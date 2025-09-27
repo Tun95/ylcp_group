@@ -81,7 +81,10 @@ class UserService {
   }
 
   // Admin: Get all users with pagination and filtering
-  async getAllUsers({ page, limit, search, role, status }) {
+  async getAllUsers(
+    { page, limit, search, role, status },
+    options = { isAdmin: true }
+  ) {
     try {
       const query = {};
 
@@ -112,19 +115,21 @@ class UserService {
       const [users, total] = await Promise.all([
         userModel
           .find(query)
-          .select(
-            "-password -password_reset_token -password_reset_expires -account_verification_otp -account_verification_otp_expires"
-          )
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(pageLimit),
         userModel.countDocuments(query),
       ]);
 
+      // Sanitize all users in the response
+      const sanitizedUsers = users.map((user) =>
+        fieldSecurity.sanitizeUser(user, options)
+      );
+
       const totalPages = Math.ceil(total / pageLimit);
 
       return {
-        users,
+        users: sanitizedUsers,
         pagination: {
           currentPage: currentPage,
           totalPages: totalPages,
@@ -169,28 +174,24 @@ class UserService {
   }
 
   // Admin: Update user status (merged block/unblock functionality)
-  async updateUserStatus(userId, status, adminId) {
+  async updateUserStatus(userId, status, adminId, options = { isAdmin: true }) {
     try {
       // Prevent admin from modifying their own status
       if (userId === adminId) {
         throw new Error(ERROR_MESSAGES.CANNOT_MODIFY_SELF_STATUS);
       }
 
-      const user = await userModel
-        .findByIdAndUpdate(
-          userId,
-          { status },
-          { new: true, runValidators: true }
-        )
-        .select(
-          "-password -password_reset_token -password_reset_expires -account_verification_otp -account_verification_otp_expires"
-        );
+      const user = await userModel.findByIdAndUpdate(
+        userId,
+        { status },
+        { new: true, runValidators: true }
+      );
 
       if (!user) {
         throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
       }
 
-      return user;
+      return fieldSecurity.sanitizeUser(user, { isAdmin: true });
     } catch (error) {
       logger.error(error, {
         service: "UserService",
