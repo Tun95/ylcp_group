@@ -16,7 +16,7 @@ module.exports = {
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
   },
   logtail: {
-    apikey: process.env.LOGTAIL_API_KEY || "BKxkmTNo4mkFDttGBwkpL7ie",
+    apikey: process.env.LOGTAIL_API_KEY || "your_logtail_api_key",
     endpoint:
       process.env.LOGTAIL_ENDPOINT ||
       "https://s1221069.eu-nbg-2.betterstackdata.com",
@@ -25,9 +25,7 @@ module.exports = {
   providers: {
     ai: {
       elevenLabs: {
-        apikey:
-          process.env.ELEVEN_LABS_API_KEY ||
-          "sk_86b7ba840845dc7fc1b6056a93745c5c1b28585cb5f0087e",
+        apikey: process.env.ELEVEN_LABS_API_KEY || "your_eleven_labs_api_key",
       },
       openAi: {
         apikey: process.env.OPENAI_API_KEY || "your_openai_api_key",
