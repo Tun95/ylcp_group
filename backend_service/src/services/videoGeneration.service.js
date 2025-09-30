@@ -8,19 +8,31 @@ const config = require("../../config");
 const { v4: uuidv4 } = require("uuid");
 const { createCanvas } = require("canvas");
 const cloudinaryService = require("./cloudinary.service");
+const { ElevenLabsClient } = require("@elevenlabs/elevenlabs-js");
 
 class VideoGenerationService {
   constructor() {
     this.elevenLabsApiKey = config.providers.ai.elevenLabs.apikey;
     this.openAIApiKey = config.providers.ai.openAi.apikey;
+
+    // Better API key validation
+    this.isValidApiKey = this.validateApiKey(this.elevenLabsApiKey);
+
     this.usageTracker = new Map();
-    this.monthlyLimit = 10000; // ElevenLabs free tier limit
+    this.monthlyLimit = 10000;
     this.tempDir = path.join(__dirname, "../../temp");
 
-    // Create temp directory if it doesn't exist
     if (!fs.existsSync(this.tempDir)) {
       fs.mkdirSync(this.tempDir, { recursive: true });
     }
+  }
+
+  validateApiKey(apiKey) {
+    if (!apiKey) return false;
+    if (apiKey.includes("YOUR_API_KEY") || apiKey.includes("example"))
+      return false;
+    if (apiKey.length < 20) return false; // ElevenLabs keys are typically longer
+    return true;
   }
 
   // MAIN METHOD: Generate complete interactive video
@@ -225,61 +237,53 @@ class VideoGenerationService {
 
   // Generate speech audio using ElevenLabs
   async generateSpeech(text, voiceSettings = {}) {
-    // Use mock data if API keys aren't configured (for development)
-    if (
-      !this.elevenLabsApiKey ||
-      this.elevenLabsApiKey === "your_eleven_labs_api_key"
-    ) {
+    // Validate API key
+    if (!this.isValidApiKey) {
+      logger.warn(
+        "Using mock audio data - Invalid or missing ElevenLabs API key"
+      );
       return this.getMockAudioData(text);
     }
 
     try {
-      const response = await axios.post(
-        `https://api.elevenlabs.io/v1/text-to-speech/${
-          voiceSettings.voice_id || "21m00Tcm4TlvDq8ikWAM"
-        }`,
+      // Initialize ElevenLabs client
+      const elevenlabs = new ElevenLabsClient({
+        apiKey: this.elevenLabsApiKey,
+      });
+
+      // Use the SDK instead of direct API calls
+      const audio = await elevenlabs.textToSpeech.convert(
+        voiceSettings.voice_id || "21m00Tcm4TlvDq8ikWAM", // voice_id
         {
           text: text,
-          model_id: "eleven_monolingual_v1",
+          model_id: "eleven_multilingual_v2",
           voice_settings: {
             stability: voiceSettings.stability || 0.5,
             similarity_boost: voiceSettings.similarity_boost || 0.5,
             style: voiceSettings.style || 0.3,
             use_speaker_boost: voiceSettings.use_speaker_boost !== false,
           },
-        },
-        {
-          headers: {
-            "xi-api-key": this.elevenLabsApiKey,
-            "Content-Type": "application/json",
-            Accept: "audio/mpeg",
-          },
-          responseType: "arraybuffer",
-          timeout: 60000,
+          output_format: "mp3_44100_128",
         }
       );
 
       const duration = this.calculateAudioDuration(text);
 
-      logger.info(`Generated speech for text: "${text}"`);
+      logger.info(
+        `✅ ElevenLabs TTS successful for text: "${text.substring(0, 50)}..."`
+      );
+
       return {
-        audioBuffer: response.data,
+        audioBuffer: audio, // The SDK returns the audio buffer directly
         duration: duration,
         format: "mp3",
       };
     } catch (error) {
-      logger.error(
-        "ElevenLabs TTS failed:",
-        error.response?.data || error.message
-      );
+      logger.error("❌ ElevenLabs TTS failed:", error);
 
-      // Fallback to mock data in development, throw in production
+      // Fallback to mock data in development
       if (config.env === "production") {
-        throw new Error(
-          `Speech generation failed: ${
-            error.response?.data?.detail || error.message
-          }`
-        );
+        throw new Error(`Speech generation failed: ${error.message}`);
       } else {
         logger.warn("Using mock audio data due to API failure");
         return this.getMockAudioData(text);
@@ -341,88 +345,120 @@ class VideoGenerationService {
       this.tempDir,
       `video_${lesson._id}_${uuidv4()}.mp4`
     );
+
+    // LOCAL tempFiles array for this method only
+    const localTempFiles = [];
     const interactionsTimeline = [];
     let totalDuration = 0;
 
-    // Create input file for FFmpeg
-    const inputListPath = path.join(this.tempDir, `input_list_${uuidv4()}.txt`);
-    let inputListContent = "";
+    try {
+      logger.info("[VIDEO] Starting video creation with FFmpeg...");
 
-    // Prepare slides with their audio
-    for (let i = 0; i < visualSlides.length; i++) {
-      const slide = visualSlides[i];
-      const audioTrack = audioTracks.find(
-        (track) => track.slideNumber === slide.slideNumber
+      // Create input file for FFmpeg
+      const inputListPath = path.join(
+        this.tempDir,
+        `input_list_${uuidv4()}.txt`
       );
-      const slideDuration = audioTrack ? audioTrack.duration : slide.duration;
+      let inputListContent = "";
 
-      // Add visual slide as image stream
-      inputListContent += `file '${slide.imagePath}'\n`;
-      inputListContent += `duration ${slideDuration}\n`;
+      // Prepare slides with their audio
+      for (let i = 0; i < visualSlides.length; i++) {
+        const slide = visualSlides[i];
+        const audioTrack = audioTracks.find(
+          (track) => track.slideNumber === slide.slideNumber
+        );
+        const slideDuration = audioTrack ? audioTrack.duration : slide.duration;
 
-      // Add interactions for this slide
-      if (audioTrack && audioTrack.interactions) {
-        audioTrack.interactions.forEach((interaction) => {
-          interactionsTimeline.push({
-            slide_number: slide.slideNumber,
-            trigger_time: totalDuration + (interaction.trigger_time || 0),
-            type: interaction.type,
-            config: interaction.config,
-            position: interaction.position,
+        // Add visual slide as image stream
+        inputListContent += `file '${slide.imagePath}'\n`;
+        inputListContent += `duration ${slideDuration}\n`;
+
+        // Add interactions for this slide
+        if (audioTrack && audioTrack.interactions) {
+          audioTrack.interactions.forEach((interaction) => {
+            interactionsTimeline.push({
+              slide_number: slide.slideNumber,
+              trigger_time: totalDuration + (interaction.trigger_time || 0),
+              type: interaction.type,
+              config: interaction.config,
+              position: interaction.position,
+            });
           });
-        });
+        }
+
+        totalDuration += slideDuration;
       }
 
-      totalDuration += slideDuration;
+      // Write input list file
+      fs.writeFileSync(inputListPath, inputListContent);
+      localTempFiles.push(inputListPath);
+
+      // Combine audio tracks into single audio file
+      const combinedAudioPath = await this.combineAudioTracks(
+        audioTracks,
+        lesson._id,
+        localTempFiles // Pass the local tempFiles array
+      );
+
+      // Use FFmpeg to create video
+      await this.createVideoWithFFmpeg(
+        inputListPath,
+        combinedAudioPath,
+        outputPath,
+        lesson.video_settings
+      );
+
+      logger.info(`[VIDEO] Video creation completed: ${outputPath}`);
+
+      return {
+        videoPath: outputPath,
+        duration: totalDuration,
+        interactionsTimeline,
+      };
+    } catch (error) {
+      // Clean up local temp files on error
+      await this.cleanupTempFiles(localTempFiles);
+      throw error;
     }
-
-    // Write input list file
-    fs.writeFileSync(inputListPath, inputListContent);
-    tempFiles.push(inputListPath);
-
-    // Combine audio tracks into single audio file
-    const combinedAudioPath = await this.combineAudioTracks(
-      audioTracks,
-      lesson._id
-    );
-    tempFiles.push(combinedAudioPath);
-
-    // Use FFmpeg to create video (simplified - you'd need proper FFmpeg commands)
-    await this.createVideoWithFFmpeg(
-      inputListPath,
-      combinedAudioPath,
-      outputPath,
-      lesson.video_settings
-    );
-
-    return {
-      videoPath: outputPath,
-      duration: totalDuration,
-      interactionsTimeline,
-    };
   }
 
   // Combine all audio tracks into single file
-  async combineAudioTracks(audioTracks, lessonId) {
+  async combineAudioTracks(audioTracks, lessonId, tempFilesArray = []) {
     const outputPath = path.join(
       this.tempDir,
       `combined_audio_${lessonId}_${uuidv4()}.mp3`
     );
 
-    // Create FFmpeg command to concatenate audio files
-    const audioListPath = path.join(this.tempDir, `audio_list_${uuidv4()}.txt`);
-    const audioListContent = audioTracks
-      .map((track) => `file '${track.audioPath}'`)
-      .join("\n");
-    fs.writeFileSync(audioListPath, audioListContent);
-    tempFiles.push(audioListPath);
+    try {
+      // Create FFmpeg command to concatenate audio files
+      const audioListPath = path.join(
+        this.tempDir,
+        `audio_list_${uuidv4()}.txt`
+      );
+      const audioListContent = audioTracks
+        .map((track) => `file '${track.audioPath}'`)
+        .join("\n");
+      fs.writeFileSync(audioListPath, audioListContent);
 
-    // Execute FFmpeg command (simplified)
-    await this.executeFFmpegCommand(
-      `-f concat -safe 0 -i "${audioListPath}" -c copy "${outputPath}"`
-    );
+      // Add to the provided tempFiles array or create new one
+      if (tempFilesArray) {
+        tempFilesArray.push(audioListPath);
+      }
 
-    return outputPath;
+      // Execute FFmpeg command
+      await this.executeFFmpegCommand(
+        `-f concat -safe 0 -i "${audioListPath}" -c copy "${outputPath}"`
+      );
+
+      if (tempFilesArray) {
+        tempFilesArray.push(outputPath);
+      }
+
+      return outputPath;
+    } catch (error) {
+      logger.error("[AUDIO] Audio combination failed:", error);
+      throw error;
+    }
   }
 
   // Create video using FFmpeg
@@ -534,8 +570,25 @@ class VideoGenerationService {
 
   getMockAudioData(text) {
     const duration = this.calculateAudioDuration(text);
+
+    // Create a simple tone instead of text
+    const sampleRate = 22050;
+    const numSamples = duration * sampleRate;
+    const buffer = Buffer.alloc(numSamples * 2); // 16-bit audio
+
+    // Generate a simple sine wave (440Hz = A note)
+    for (let i = 0; i < numSamples; i++) {
+      const sample =
+        Math.sin((2 * Math.PI * 440 * i) / sampleRate) * 32767 * 0.3; // 30% volume
+      buffer.writeInt16LE(sample, i * 2);
+    }
+
+    logger.info(
+      `🔊 Generated mock audio: ${duration}s for "${text.substring(0, 30)}..."`
+    );
+
     return {
-      audioBuffer: Buffer.from(`mock_audio_${text.substring(0, 10)}`),
+      audioBuffer: buffer,
       duration: duration,
       isMock: true,
     };

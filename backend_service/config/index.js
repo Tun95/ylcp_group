@@ -25,7 +25,9 @@ module.exports = {
   providers: {
     ai: {
       elevenLabs: {
-        apikey: process.env.ELEVEN_LABS_API_KEY || "your_eleven_labs_api_key",
+        apikey:
+          process.env.ELEVEN_LABS_API_KEY ||
+          "sk_86b7ba840845dc7fc1b6056a93745c5c1b28585cb5f0087e",
       },
       openAi: {
         apikey: process.env.OPENAI_API_KEY || "your_openai_api_key",
